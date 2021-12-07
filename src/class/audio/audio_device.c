@@ -2246,7 +2246,20 @@ static void audiod_parse_for_AS_params(audiod_function_t* audio, uint8_t const *
 #endif
 
 #if CFG_TUD_AUDIO_ENABLE_FEEDBACK_EP
+// Input value feedback In desired format. Used to work around windows 10 UAC2 Driver.
+bool tud_audio_n_fb_formatted_set(uint8_t func_id, uint32_t feedback)
+{
+  TU_VERIFY(func_id < CFG_TUD_AUDIO && _audiod_fct[func_id].p_desc != NULL);
 
+  _audiod_fct[func_id].fb_val = feedback;
+
+  if (!usbd_edpt_busy(_audiod_fct[func_id].rhport, _audiod_fct[func_id].ep_fb))
+  {
+    return audiod_fb_send(_audiod_fct[func_id].rhport, &_audiod_fct[func_id]);
+  }
+
+  return true;
+}
 // Input value feedback has to be in 16.16 format - the format will be converted according to speed settings automatically
 bool tud_audio_n_fb_set(uint8_t func_id, uint32_t feedback)
 {
