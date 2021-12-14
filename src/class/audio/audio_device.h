@@ -459,6 +459,8 @@ TU_ATTR_WEAK bool tud_audio_fb_done_cb(uint8_t rhport);
 // (see Universal Serial Bus Specification Revision 2.0 5.12.4.2).
 // Feedback value will be sent at FB endpoint interval till it's changed.
 bool tud_audio_n_fb_set(uint8_t func_id, uint32_t feedback);
+// User code calls this with speed == true for 16.16 false for 10.14
+bool tud_audio_n_fb_format_set(uint8_t func_id, uint32_t feedback,bool speed);
 static inline bool tud_audio_fb_set(uint32_t feedback);
 #endif
 

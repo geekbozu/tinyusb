@@ -28,10 +28,7 @@
  */
 
 #include "tusb_option.h"
-
-// Since TinyUSB doesn't use SOF for now, and this interrupt too often (1ms interval)
-// We disable SOF for now until needed later on
-#define USE_SOF     0
+#include "dcd_synopsys.h"
 
 #if defined (STM32F105x8) || defined (STM32F105xB) || defined (STM32F105xC) || \
     defined (STM32F107xB) || defined (STM32F107xC)
@@ -529,7 +526,9 @@ void dcd_init (uint8_t rhport)
 
   usb_otg->GINTMSK |= USB_OTG_GINTMSK_USBRST   | USB_OTG_GINTMSK_ENUMDNEM |
       USB_OTG_GINTMSK_USBSUSPM | USB_OTG_GINTMSK_WUIM     |
-      USB_OTG_GINTMSK_RXFLVLM  | (USE_SOF ? USB_OTG_GINTMSK_SOFM : 0);
+      USB_OTG_GINTMSK_RXFLVLM;
+  if(dcd_sof_cb) usb_otg->GINTMSK |= USB_OTG_GINTMSK_SOFM;
+
 
   // Enable global interrupt
   usb_otg->GAHBCFG |= USB_OTG_GAHBCFG_GINT;
@@ -1177,8 +1176,13 @@ void dcd_int_handler(uint8_t rhport)
   {
     usb_otg->GINTSTS = USB_OTG_GINTSTS_SOF;
 
-    // Disable SOF interrupt since currently only used for remote wakeup detection
-    usb_otg->GINTMSK &= ~USB_OTG_GINTMSK_SOFM;
+    if (dcd_sof_cb) {
+    	uint32_t frame = (dev->DSTS & (USB_OTG_DSTS_FNSOF)) >> 8;
+		dcd_sof_cb(frame);
+    }else{
+    	// Disable SOF interrupt since currently only used for remote wakeup detection
+    	usb_otg->GINTMSK &= ~USB_OTG_GINTMSK_SOFM;
+    }
 
     dcd_event_bus_signal(rhport, DCD_EVENT_SOF, true);
   }
